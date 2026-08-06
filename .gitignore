@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# macOS
+.DS_Store
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Exam board source material — copyright, do not distribute
+resources/
+
+# LaTeX build artefacts
+*.aux
+*.log
+*.out
+*.synctex.gz
