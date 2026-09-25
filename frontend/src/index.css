@@ -42,7 +42,8 @@ body {
 /* --- Print: show only the paper sheet, as clean black-on-white pages. --- */
 @media print {
   @page {
-    margin: 16mm;
+    size: A4;
+    margin: 20mm 15mm;
   }
   body {
     background: #ffffff;

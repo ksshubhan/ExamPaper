@@ -1,0 +1,16 @@
+{
+  "board": "edexcel",
+  "tier": "higher",
+  "total_marks": 80,
+  "question_count": { "min": 21, "max": 24 },
+  "grade_floor": 4,
+  "_mark_distribution_note": "Measured across Edexcel 1MA1/1H June 2022 + June 2023 (45 questions, 160 marks). Weights are the share of questions at each mark value.",
+  "mark_distribution": {
+    "1": 0.02,
+    "2": 0.13,
+    "3": 0.33,
+    "4": 0.33,
+    "5": 0.13,
+    "6": 0.04
+  }
+}

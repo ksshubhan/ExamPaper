@@ -24,6 +24,20 @@ class Diagram(BaseModel):
         default=True,
         description="If true, the UI shows 'Diagram NOT accurately drawn'.",
     )
+    plot_grid: bool = Field(
+        default=False,
+        description="If true, the figure is a coordinate graph / graph-paper plot "
+        "— whether pre-drawn to read off or a blank grid to plot on. The UI gives "
+        "it a large box so the grid is big enough to work with.",
+    )
+
+
+class Table(BaseModel):
+    """A small data table shown with the question (e.g. a frequency table)."""
+
+    caption: str = Field(default="", description="Optional heading above the table.")
+    headers: list[str] = Field(description="Column headers.")
+    rows: list[list[str]] = Field(description="Row cells, each row same length as headers.")
 
 
 class MarkSchemeStep(BaseModel):
@@ -83,6 +97,7 @@ class Item(BaseModel):
     stem: str = Field(description="Lead-in text shared by all parts.")
     parts: list[Part]
     diagram: Optional[Diagram] = None
+    table: Optional[Table] = None
 
     metadata: Metadata
 
@@ -99,6 +114,7 @@ class GenerateRequest(BaseModel):
     archetype: Optional[str] = None
     variant: Optional[str] = None
     calculator: Optional[bool] = None
+    tier: Optional[Tier] = None  # paper tier; falls back to 'higher' in item factories
     seed: Optional[int] = None
 
 

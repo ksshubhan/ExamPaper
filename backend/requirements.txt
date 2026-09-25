@@ -2,3 +2,8 @@ fastapi>=0.115
 uvicorn[standard]>=0.30
 pydantic>=2.0
 sympy>=1.13
+# Headless-Chromium PDF rendering (run `python -m playwright install chromium`
+# once after installing) — produces clean A4 PDFs with our own page footer and
+# none of the browser print dialog's injected headers/footers.
+playwright>=1.40
+pypdf>=4.0  # pad the paper to an even page count (printed double-sided)

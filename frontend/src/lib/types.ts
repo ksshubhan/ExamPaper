@@ -4,6 +4,13 @@ export interface Diagram {
   svg: string
   alt: string
   not_to_scale: boolean
+  plot_grid?: boolean
+}
+
+export interface Table {
+  caption: string
+  headers: string[]
+  rows: string[][]
 }
 
 export interface MarkSchemeStep {
@@ -47,6 +54,7 @@ export interface Item {
   stem: string
   parts: Part[]
   diagram: Diagram | null
+  table: Table | null
   metadata: Metadata
 }
 

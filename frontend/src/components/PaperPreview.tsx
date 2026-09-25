@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Item, Paper } from '../lib/types'
+import type { Item, Paper, Part, Table } from '../lib/types'
 import { BracketsIcon } from './icons'
 
 /**
@@ -8,25 +8,66 @@ import { BracketsIcon } from './icons'
  * breaks and break-avoidance are driven by the `.page-break` / `.avoid-break`
  * classes defined in index.css.
  *
- * The cover mirrors a real Edexcel front page (layout + wording), with the
- * Pearson logo / paper code / barcode replaced by Learnify's own versions.
+ * The cover follows a familiar exam-paper layout (functional conventions only)
+ * but carries Learnify's own identity — no awarding-body trade marks, paper
+ * codes, or barcodes.
  */
 export default function PaperPreview({ paper }: { paper: Paper }) {
+  const showScheme = paper.include_answers && paper.questions.length > 0
+  return (
+    <div className="space-y-8">
+      <PaperSheet>
+        <PaperDocument paper={paper} />
+      </PaperSheet>
+      {showScheme && (
+        <PaperSheet>
+          <MarkSchemeDocument paper={paper} />
+        </PaperSheet>
+      )}
+    </div>
+  )
+}
+
+/** The white A4 sheet wrapper — one per printable document. */
+export function PaperSheet({ children }: { children: ReactNode }) {
   return (
     <div className="printable paper-sheet mx-auto max-w-[820px] bg-white text-black shadow-sm">
-      <Cover paper={paper} />
+      {children}
+    </div>
+  )
+}
 
+/**
+ * The question paper: cover + questions. Answers NEVER appear here, so a student
+ * who prints/downloads `paper.pdf` never gets the mark scheme.
+ */
+export function PaperDocument({ paper }: { paper: Paper }) {
+  return (
+    <>
+      <Cover paper={paper} />
       {/* Questions start on a fresh page, after the cover's "Turn over". */}
       <section className="page-break px-12 py-10">
         {paper.questions.map((q, i) => (
           <QuestionBlock key={q.id} item={q} number={i + 1} />
         ))}
+        {paper.questions.length > 0 && (
+          <p className="avoid-break mt-6 border-t-2 border-black pt-3 text-right text-sm font-bold uppercase tracking-wide">
+            Total for the paper is {paper.total_marks}{' '}
+            {paper.total_marks === 1 ? 'mark' : 'marks'}
+          </p>
+        )}
       </section>
+    </>
+  )
+}
 
-      {paper.include_answers && paper.questions.length > 0 && (
-        <Answers paper={paper} />
-      )}
-    </div>
+/** The mark scheme: its own cover, then the answers + scheme — a separate PDF. */
+export function MarkSchemeDocument({ paper }: { paper: Paper }) {
+  return (
+    <>
+      <MarkSchemeCover paper={paper} />
+      <Answers paper={paper} />
+    </>
   )
 }
 
@@ -59,11 +100,6 @@ const BOX = 'rounded-[10px] border-[3px] border-[#63676d]'
 
 function Cover({ paper }: { paper: Paper }) {
   const higher = paper.tier === 'higher'
-  const reference = `LMA1/${paper.calculator ? '2' : '1'}${higher ? 'H' : 'F'}`
-  const paperLabel = paper.calculator
-    ? 'PAPER 2 (Calculator)'
-    : 'PAPER 1 (Non-Calculator)'
-  const code = `L${paper.id.replace('paper-', '').toUpperCase().slice(0, 8)}`
 
   return (
     <section className="flex min-h-[1040px] flex-col px-10 py-9">
@@ -101,54 +137,33 @@ function Cover({ paper }: { paper: Paper }) {
           </div>
         </div>
 
-        {/* Awarding body */}
-        <p className="mt-4 text-[26px] font-black leading-none tracking-tight">
-          Pearson Edexcel Level 1/Level 2 GCSE (9–1)
-        </p>
+        {/* Title block — a Learnify practice paper, not an awarding-body product */}
+        <div className="mt-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[28px] font-black leading-tight tracking-tight">
+              Learnify Practice Paper
+            </p>
+            <p className="mt-1.5 text-[18px] font-bold">
+              Edexcel-style GCSE (9–1) {higher ? 'Higher' : 'Foundation'} Tier
+            </p>
+            <p className="text-[18px] font-bold">
+              {subjectName(paper.subject)} — Paper{' '}
+              {paper.calculator ? '2' : '1'} (
+              {paper.calculator ? 'Calculator' : 'Non-Calculator'})
+            </p>
+            <p className="mt-1.5 text-[15px]">
+              Time: {formatDuration(paper.duration_minutes)}
+            </p>
+            <p className="mt-2 text-[11px] italic text-neutral-500">
+              Not affiliated with or endorsed by Pearson Education Ltd.
+            </p>
+          </div>
+          <CalcIcon crossed={!paper.calculator} />
+        </div>
 
         {/* Date */}
-        <div className={`${BOX} mt-3 w-[86%] px-4 py-2`}>
-          <p className="text-[24px] font-black">{coverDate()}</p>
-        </div>
-
-        {/* Time + paper reference */}
-        <div className="mt-3 flex items-start gap-4">
-          <p className="flex-1 self-center text-[17px]">
-            Morning (Time: {formatDuration(paper.duration_minutes)})
-          </p>
-          <div className="flex h-14 items-stretch">
-            <div className="flex items-center border-[3px] border-r-0 border-[#63676d] bg-white px-2.5 text-[14px] font-bold leading-[1.05]">
-              Paper
-              <br />
-              reference
-            </div>
-            <div className="relative flex items-center bg-[#5b5f65] px-4">
-              <span className="text-[28px] font-black tracking-wide text-white">
-                {reference}
-              </span>
-              {/* registration squares at the top-right corner */}
-              <span className="absolute -top-1.5 right-2 flex gap-1">
-                <span className="h-3 w-3 bg-[#9aa0a6]" />
-                <span className="h-3 w-3 border-2 border-[#9aa0a6] bg-white" />
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Subject */}
-        <div className={`${BOX} relative mt-3 min-h-[186px] px-4 py-3`}>
-          <div>
-            <p className="text-[34px] font-black leading-none">
-              {subjectName(paper.subject)}
-            </p>
-            <p className="mt-2 text-[19px] font-black">{paperLabel}</p>
-            <p className="text-[19px] font-black">
-              {higher ? 'Higher Tier' : 'Foundation Tier'}
-            </p>
-          </div>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <CalcIcon crossed={!paper.calculator} />
-          </div>
+        <div className={`${BOX} mt-4 w-[86%] px-4 py-2`}>
+          <p className="text-[20px] font-black">{coverDate()}</p>
         </div>
 
         {/* Equipment + total marks */}
@@ -174,18 +189,14 @@ function Cover({ paper }: { paper: Paper }) {
               Use <strong>black</strong> ink or ball-point pen.
             </>,
             <>
-              If pencil is used for diagrams/sketches/graphs it must be dark (HB
-              or B).
-            </>,
-            <>
               <strong>Fill in the boxes</strong> at the top of this page with
               your name, centre number and candidate number.
             </>,
             <>
-              Answer <strong>all</strong> questions.
+              Attempt <strong>all</strong> questions.
             </>,
             <>
-              Answer the questions in the spaces provided{' '}
+              Write your responses in the spaces provided{' '}
               <em>– there may be more space than you need.</em>
             </>,
             <>
@@ -226,21 +237,42 @@ function Cover({ paper }: { paper: Paper }) {
         />
       </div>
 
-      {/* ---- Footer (Learnify versions of code / barcode / logo) ---- */}
+      {/* ---- Footer: our own mark only, no paper code or barcode ---- */}
       <div className="mt-auto">
         <p className="pb-3 text-right text-sm font-bold italic">Turn over ▸</p>
         <div className="flex items-end justify-between border-t border-neutral-200 pt-3">
-          <div className="text-xs">
-            <p className="text-base font-bold tracking-wide">{code}</p>
-            <p className="text-neutral-500">
-              © {new Date().getFullYear()} Learnify
-            </p>
-            <p className="text-neutral-500">L:1/1/1/</p>
-          </div>
-          <Barcode value={paper.id} />
           <LearnifyMark />
         </div>
       </div>
+    </section>
+  )
+}
+
+/** The mark scheme's own cover — a compact title page, its own document. */
+function MarkSchemeCover({ paper }: { paper: Paper }) {
+  const higher = paper.tier === 'higher'
+  return (
+    <section className="px-12 py-16">
+      <p className="text-[30px] font-black leading-tight tracking-tight">
+        Learnify Practice Paper
+      </p>
+      <p className="mt-1.5 text-[22px] font-bold">Mark Scheme</p>
+      <div className="mt-6 space-y-1 text-[16px]">
+        <p>
+          Edexcel-style GCSE (9–1) {higher ? 'Higher' : 'Foundation'} Tier
+        </p>
+        <p>
+          {subjectName(paper.subject)} — Paper {paper.calculator ? '2' : '1'} (
+          {paper.calculator ? 'Calculator' : 'Non-Calculator'})
+        </p>
+        <p>
+          Total for this paper: {paper.total_marks}{' '}
+          {paper.total_marks === 1 ? 'mark' : 'marks'}
+        </p>
+      </div>
+      <p className="mt-6 text-[11px] italic text-neutral-500">
+        Not affiliated with or endorsed by Pearson Education Ltd.
+      </p>
     </section>
   )
 }
@@ -278,9 +310,6 @@ function CalcIcon({ crossed }: { crossed: boolean }) {
           stroke="#1e1e1e"
           strokeWidth="2.5"
         />
-        <text x="50" y="27" fontSize="6.5" fontWeight="bold" fill="#1e1e1e">
-          SCIENTIFIC
-        </text>
         {/* screen */}
         <rect
           x="47"
@@ -292,9 +321,6 @@ function CalcIcon({ crossed }: { crossed: boolean }) {
           stroke="#1e1e1e"
           strokeWidth="1.6"
         />
-        <text x="108" y="49" fontSize="9" textAnchor="end" fill="#2a2a2a">
-          0.
-        </text>
         {/* buttons */}
         {rows.map((y, r) =>
           cols.map((x, c) => (
@@ -319,30 +345,6 @@ function CalcIcon({ crossed }: { crossed: boolean }) {
         )}
       </g>
     </svg>
-  )
-}
-
-/** A deterministic faux barcode derived from the paper id. */
-function Barcode({ value }: { value: string }) {
-  const bars: { x: number; w: number }[] = []
-  let x = 0
-  for (let i = 0; i < value.length; i++) {
-    const w = (value.charCodeAt(i) % 3) + 1
-    bars.push({ x, w })
-    x += w + ((value.charCodeAt(i) % 2) + 1)
-  }
-  const width = x
-  return (
-    <div className="flex flex-col items-center">
-      <svg width={width} height="36" viewBox={`0 0 ${width} 36`}>
-        {bars.map((b, i) => (
-          <rect key={i} x={b.x} y="0" width={b.w} height="36" fill="black" />
-        ))}
-      </svg>
-      <span className="mt-1 font-mono text-[10px] tracking-widest text-neutral-600">
-        {value.replace('paper-', '').toUpperCase()}
-      </span>
-    </div>
   )
 }
 
@@ -377,8 +379,15 @@ function Section({ title, items }: { title: string; items: ReactNode[] }) {
 // Questions + answers (unchanged layout)
 // --------------------------------------------------------------------------- #
 function QuestionBlock({ item, number }: { item: Item; number: number }) {
+  // A question worth 4+ marks starts on a fresh page so its (now generous)
+  // working space isn't split across a page break. The first question already
+  // opens a new page via the section, so only force it from the second on.
+  const startNewPage = number > 1 && item.total_marks >= 4
+  // Per-part marks appear only on multi-part questions; a single-part question
+  // carries its marks on the closing total line instead.
+  const multiPart = item.parts.length > 1
   return (
-    <article className="avoid-break mb-10">
+    <article className={`avoid-break mb-10${startNewPage ? ' page-break' : ''}`}>
       <div className="flex gap-3">
         <span className="text-base font-bold">{number}</span>
         <div className="flex-1">
@@ -386,10 +395,20 @@ function QuestionBlock({ item, number }: { item: Item; number: number }) {
             <p className="whitespace-pre-line leading-relaxed">{item.stem}</p>
           )}
 
+          {item.table && <DataTable table={item.table} />}
+
           {item.diagram && (
             <figure className="my-4">
+              {/* Fixed-height box above the working space: the SVG scales to
+                  fill it (viewBox + default preserveAspectRatio letterboxes),
+                  so every diagram occupies the same, predictable band. Graphs
+                  and plotting grids get a much larger box — full column width and
+                  tall — so they are big enough to read off and plot on. */}
               <div
-                className="mx-auto max-w-[280px]"
+                className={`mx-auto w-full overflow-hidden [&>svg]:h-full [&>svg]:w-full ${
+                  item.diagram.plot_grid ? 'max-w-full' : 'max-w-[280px]'
+                }`}
+                style={{ height: item.diagram.plot_grid ? '120mm' : '60mm' }}
                 role="img"
                 aria-label={item.diagram.alt}
                 dangerouslySetInnerHTML={{ __html: item.diagram.svg }}
@@ -404,39 +423,157 @@ function QuestionBlock({ item, number }: { item: Item; number: number }) {
 
           {item.parts.map((part, i) => (
             <div key={i} className="mt-3">
-              <div className="flex items-start justify-between gap-4">
-                <p className="leading-relaxed">
-                  {part.label && (
-                    <span className="mr-2 font-semibold">({part.label})</span>
-                  )}
-                  {part.prompt}
-                </p>
-                <span className="shrink-0 text-sm text-neutral-500">
-                  ({part.marks})
-                </span>
-              </div>
-              <AnswerSpace marks={part.marks} />
+              <p className="leading-relaxed">
+                {part.label && (
+                  <span className="mr-2 font-semibold">({part.label})</span>
+                )}
+                {part.prompt}
+              </p>
+              <AnswerLine part={part} showMarks={multiPart} />
             </div>
           ))}
-
-          <p className="mt-3 text-right text-xs font-semibold text-neutral-600">
-            (Total for Question {number} is {item.total_marks}{' '}
-            {item.total_marks === 1 ? 'mark' : 'marks'})
-          </p>
         </div>
       </div>
+      {/* Every question closes with its total, then a full-width rule. */}
+      <p className="mt-3 text-right text-xs font-semibold text-neutral-600">
+        (Total for Question {number} is {item.total_marks}{' '}
+        {item.total_marks === 1 ? 'mark' : 'marks'})
+      </p>
+      <hr className="mt-2 w-full border-t border-neutral-400" />
     </article>
   )
 }
 
-function AnswerSpace({ marks }: { marks: number }) {
-  const height = 48 + marks * 26
+function DataTable({ table }: { table: Table }) {
   return (
-    <div
-      className="mt-3 rounded-sm border border-neutral-200"
-      style={{ height }}
-      aria-hidden
-    />
+    <figure className="my-5">
+      {table.caption && (
+        <figcaption className="mb-2 text-center text-base font-semibold">
+          {table.caption}
+        </figcaption>
+      )}
+      <div className="overflow-x-auto">
+        <table className="mx-auto border-collapse text-base">
+          <thead>
+            <tr>
+              {table.headers.map((h, i) => (
+                <th
+                  key={i}
+                  className="border border-neutral-500 px-5 py-2.5 text-left font-semibold"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row, r) => (
+              <tr key={r}>
+                {row.map((cell, c) => (
+                  <td
+                    key={c}
+                    className="border border-neutral-500 px-5 py-2.5 tabular-nums"
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </figure>
+  )
+}
+
+// Units the answer line can pre-print, longest first so "cm²" wins over "cm"
+// and "km/h" over "km". The value never comes from a new schema field — it is
+// read back out of the answer string the generator already produced.
+const ANSWER_UNITS = [
+  'g/cm³', 'g/cm²', 'cm³', 'cm²', 'm³', 'm²', 'km/h', 'm/s', 'mph', 'cm',
+  'mm', 'km', 'kg', 'ml', 'litres', 'litre', '°', '%', 'm', 'g',
+]
+
+/**
+ * Derive what to pre-print around a blank answer line from the model answer:
+ * a leading prefix ("x =", "£") and/or a trailing unit ("cm²", "°").
+ * Compound, sentence, or expression answers get a plain line (no unit),
+ * so we never mislabel e.g. "Alice £120, Mel £150" or a coordinate.
+ */
+function answerFormat(answer: string): { prefix: string; unit: string } {
+  const a = answer.trim()
+  // Compound / sentence / multi-value answers → plain line (e.g. two-value
+  // trig solutions "x = 120° or x = 240°", or "Alice £120, Mel £150").
+  if (a.includes(',') || a.includes('\n') || a.includes(' or ') || a.length > 24) {
+    return { prefix: '', unit: '' }
+  }
+
+  let prefix = ''
+  let rest = a
+
+  // Leading variable assignment, e.g. "x = 5", "n = 12", "OP = ...".
+  const varMatch = rest.match(/^([A-Za-z]{1,3}[₀-₉]?)\s*=\s*(.+)$/)
+  if (varMatch) {
+    prefix = `${varMatch[1]} =`
+    rest = varMatch[2].trim()
+  } else {
+    // Currency prefix, e.g. "£4.41", "$108".
+    const cur = rest.match(/^([£$])\s*(.+)$/)
+    if (cur) {
+      prefix = cur[1]
+      rest = cur[2].trim()
+    }
+  }
+
+  // Trailing unit — only when it genuinely closes a quantity (the char before
+  // it is a digit/space/bracket, never a letter, so words never match).
+  let unit = ''
+  for (const u of ANSWER_UNITS) {
+    if (rest.endsWith(u)) {
+      const before = rest.slice(0, rest.length - u.length)
+      if (before === '' || /[\d.\s)²³√±/-]$/.test(before)) {
+        unit = u
+        break
+      }
+    }
+  }
+
+  return { prefix, unit }
+}
+
+/**
+ * Working space (in mm) a part earns from its marks: a flat base plus a fixed
+ * per-mark allowance, so the space scales with the work asked for and a 1-mark
+ * part and a 5-mark part get visibly different room. The space is left blank —
+ * no ruled lines — so candidates set out their working freely.
+ */
+function writingSpaceMm(marks: number): number {
+  return 15 + 22 * marks
+}
+
+function AnswerLine({ part, showMarks }: { part: Part; showMarks: boolean }) {
+  const { prefix, unit } = answerFormat(part.answer)
+  const mm = writingSpaceMm(part.marks)
+  return (
+    <div className="mt-3 flex flex-col" style={{ minHeight: `${mm}mm` }}>
+      {/* Blank working space — no ruled lines; its height is set by the marks. */}
+      <div className="flex-1" aria-hidden />
+      {/* Final answer line: an unlabelled, right-aligned dotted rule, with the
+          answer's prefix/unit pre-printed where the model answer implies one. */}
+      <div className="mt-5 flex items-end justify-end gap-2" aria-hidden>
+        {prefix && <span className="pb-0.5 text-sm">{prefix}</span>}
+        <span
+          className="mb-1 border-b border-dotted border-neutral-500"
+          style={{ width: '27.5mm' }}
+        />
+        {unit && <span className="whitespace-nowrap pb-0.5 text-sm">{unit}</span>}
+      </div>
+      {/* Per-part marks: a bold, right-aligned bracketed number — shown only on
+          multi-part questions (single-part marks live on the total line). */}
+      {showMarks && (
+        <p className="mt-1 text-right text-sm font-bold">({part.marks})</p>
+      )}
+    </div>
   )
 }
 
@@ -452,7 +589,20 @@ function Answers({ paper }: { paper: Paper }) {
             <div className="flex gap-3">
               <span className="font-bold">{i + 1}</span>
               <div className="flex-1">
-                <p className="font-semibold">{q.parts[0]?.answer}</p>
+                <div className="font-semibold">
+                  {q.parts.length === 1 && !q.parts[0]?.label ? (
+                    <p>{q.parts[0]?.answer}</p>
+                  ) : (
+                    q.parts.map((part, k) => (
+                      <p key={k}>
+                        {part.label && (
+                          <span className="mr-1">({part.label})</span>
+                        )}
+                        {part.answer}
+                      </p>
+                    ))
+                  )}
+                </div>
                 <ul className="mt-1 space-y-0.5 text-sm text-neutral-700">
                   {q.parts.flatMap((part) =>
                     part.mark_scheme.map((step, j) => (

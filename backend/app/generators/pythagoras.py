@@ -23,6 +23,7 @@ from typing import Optional
 import sympy
 
 from ..schema import Diagram, GenerateRequest, Item, MarkSchemeStep, Metadata, Part
+from .context import sig_figs
 from .diagrams import right_triangle_svg
 
 # Primitive Pythagorean triples (a < b < c). Scaled by a small factor for variety.
@@ -218,14 +219,13 @@ def _build_item(req: GenerateRequest, seed: int, p: dict, exact: sympy.Expr) -> 
         ]
         grade_band = "5-7"
     else:  # decimal
-        decimal = round(float(exact), 1)
-        ans_val = f"{decimal:.1f}"
+        ans_val = sig_figs(float(exact), 3)
         marks = 3
-        form_note = "\nGive your answer correct to 1 decimal place."
+        form_note = "\nGive your answer correct to 3 significant figures."
         working = (
             f"{pyth_line}\n"
             f"x² = {sq_expr} = {n}\n"
-            f"x = √{n} = {ans_val} cm (to 1 d.p.)"
+            f"x = √{n} = {ans_val} cm (to 3 s.f.)"
         )
         mark_scheme = [
             MarkSchemeStep(
@@ -279,7 +279,7 @@ def _build_item(req: GenerateRequest, seed: int, p: dict, exact: sympy.Expr) -> 
         qualification=req.qualification,
         board=req.board,
         subject=req.subject,
-        tier="higher",
+        tier=(req.tier or "higher"),
         calculator=(mode == "decimal"),
         total_marks=marks,
         stem="The diagram shows a right-angled triangle.",
@@ -352,8 +352,8 @@ def build_pythagoras_item(req: GenerateRequest) -> Item:
             coeff, radicand = _simplify_surd(p["n"])
             if sympy.simplify(exact - coeff * sympy.sqrt(radicand)) != 0:
                 continue
-        else:  # decimal
-            if abs(float(exact) - round(float(exact), 1)) > 0.05:
+        else:  # decimal — verify the 3-s.f. rounding is faithful
+            if abs(float(exact) - float(sig_figs(float(exact), 3))) > 0.06:
                 continue
 
         return _build_item(req, seed, p, exact)

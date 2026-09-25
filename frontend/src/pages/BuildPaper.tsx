@@ -1,12 +1,41 @@
 import { useEffect, useMemo, useState } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { Navigate, useParams } from 'react-router-dom'
 import { getBoard, getFormat, getQualification, getSubject } from '../data/catalog'
 import Breadcrumb from '../components/Breadcrumb'
-import PaperPreview from '../components/PaperPreview'
-import { generatePaper, getTopics } from '../lib/api'
+import PaperPreview, {
+  MarkSchemeDocument,
+  PaperDocument,
+  PaperSheet,
+} from '../components/PaperPreview'
+import { generatePaper, getTopics, renderPdf } from '../lib/api'
 import type { Paper, TopicGroup } from '../lib/types'
 
 const MARK_PRESETS = [25, 40, 60, 80]
+
+/** Serialize every same-origin stylesheet so the PDF renderer has our CSS. */
+function collectCss(): string {
+  let css = ''
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      for (const rule of Array.from(sheet.cssRules)) css += rule.cssText + '\n'
+    } catch {
+      // A cross-origin stylesheet we can't read — not ours, skip it.
+    }
+  }
+  return css
+}
+
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
 
 export default function BuildPaper() {
   const { feature, qualification, board, subject } = useParams()
@@ -19,11 +48,13 @@ export default function BuildPaper() {
   const [topicsError, setTopicsError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [calculator, setCalculator] = useState(false)
+  const [tier, setTier] = useState<'foundation' | 'higher'>('higher')
   const [targetMarks, setTargetMarks] = useState(80)
   const [includeAnswers, setIncludeAnswers] = useState(true)
 
   const [paper, setPaper] = useState<Paper | null>(null)
   const [loading, setLoading] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -69,6 +100,7 @@ export default function BuildPaper() {
         board: examBoard!.slug,
         subject: subj!.slug,
         calculator,
+        tier,
         topics: [...selected],
         target_marks: targetMarks,
         include_answers: includeAnswers,
@@ -78,6 +110,38 @@ export default function BuildPaper() {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleDownload() {
+    if (!paper) return
+    setDownloading(true)
+    setError(null)
+    try {
+      const css = collectCss()
+      // The question paper — never contains answers.
+      const paperHtml = renderToStaticMarkup(
+        <PaperSheet>
+          <PaperDocument paper={paper} />
+        </PaperSheet>,
+      )
+      saveBlob(await renderPdf(paperHtml, css, 'paper.pdf'), 'paper.pdf')
+      // The mark scheme ships as its own separate PDF.
+      if (paper.include_answers) {
+        const schemeHtml = renderToStaticMarkup(
+          <PaperSheet>
+            <MarkSchemeDocument paper={paper} />
+          </PaperSheet>,
+        )
+        saveBlob(
+          await renderPdf(schemeHtml, css, 'mark-scheme.pdf'),
+          'mark-scheme.pdf',
+        )
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not build the PDF.')
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -108,6 +172,15 @@ export default function BuildPaper() {
 
         {/* Options */}
         <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Segmented
+            label="Tier"
+            value={tier}
+            options={[
+              { value: 'foundation', label: 'Foundation' },
+              { value: 'higher', label: 'Higher' },
+            ]}
+            onChange={(v) => setTier(v as 'foundation' | 'higher')}
+          />
           <Segmented
             label="Paper type"
             value={calculator ? 'calc' : 'noncalc'}
@@ -224,10 +297,15 @@ export default function BuildPaper() {
             </p>
             <button
               type="button"
-              onClick={() => window.print()}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold transition hover:border-[var(--muted)]"
+              onClick={handleDownload}
+              disabled={downloading}
+              className="rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-[var(--accent-text)] transition hover:opacity-90 disabled:opacity-50"
             >
-              Download PDF
+              {downloading
+                ? 'Preparing PDF…'
+                : paper.include_answers
+                  ? 'Download paper + mark scheme'
+                  : 'Download paper PDF'}
             </button>
           </div>
         )}

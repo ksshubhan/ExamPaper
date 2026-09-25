@@ -1,0 +1,9 @@
+# Optional developer tooling. The test suite itself runs on the stdlib
+# (unittest) with no install; pytest just gives nicer output / discovery.
+#
+#   python -m venv .venv-dev && . .venv-dev/bin/activate
+#   pip install -r requirements.txt -r requirements-dev.txt
+#   pytest tests -q
+#
+# (The root .venv is intentionally left untouched.)
+pytest>=8.0
