@@ -66,7 +66,7 @@ export default function Header() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--text)]">
             <BracketsIcon className="h-4 w-4" />
           </span>
-          <span className="text-lg font-semibold tracking-tight">Learnify</span>
+          <span className="text-lg font-semibold tracking-tight">ExamPaper</span>
         </Link>
 
         {/* Nav pills */}

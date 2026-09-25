@@ -1,4 +1,4 @@
-"""Learnify question-generation API.
+"""ExamPaper question-generation API.
 
 Phase 0: a single `/generate` endpoint returning a stub Pythagoras item, so the
 frontend Generate button has a live round-trip to build against.
@@ -16,7 +16,7 @@ from .generators.registry import get_generator, topics_catalog
 from .pdf import render_pdf
 from .schema import GeneratePaperRequest, GenerateRequest, Item, Paper
 
-app = FastAPI(title="Learnify API", version="0.0.1")
+app = FastAPI(title="ExamPaper API", version="0.0.1")
 
 # The Vite dev server proxies /api -> here, so same-origin in practice. CORS is
 # kept permissive in dev as a safety net for direct calls.

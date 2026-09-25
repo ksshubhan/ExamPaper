@@ -9,7 +9,7 @@ import { BracketsIcon } from './icons'
  * classes defined in index.css.
  *
  * The cover follows a familiar exam-paper layout (functional conventions only)
- * but carries Learnify's own identity — no awarding-body trade marks, paper
+ * but carries ExamPaper's own identity — no awarding-body trade marks, paper
  * codes, or barcodes.
  */
 export default function PaperPreview({ paper }: { paper: Paper }) {
@@ -137,11 +137,11 @@ function Cover({ paper }: { paper: Paper }) {
           </div>
         </div>
 
-        {/* Title block — a Learnify practice paper, not an awarding-body product */}
+        {/* Title block — a ExamPaper practice paper, not an awarding-body product */}
         <div className="mt-5 flex items-start justify-between gap-4">
           <div>
             <p className="text-[28px] font-black leading-tight tracking-tight">
-              Learnify Practice Paper
+              ExamPaper Practice Paper
             </p>
             <p className="mt-1.5 text-[18px] font-bold">
               Edexcel-style GCSE (9–1) {higher ? 'Higher' : 'Foundation'} Tier
@@ -241,7 +241,7 @@ function Cover({ paper }: { paper: Paper }) {
       <div className="mt-auto">
         <p className="pb-3 text-right text-sm font-bold italic">Turn over ▸</p>
         <div className="flex items-end justify-between border-t border-neutral-200 pt-3">
-          <LearnifyMark />
+          <ExamPaperMark />
         </div>
       </div>
     </section>
@@ -254,7 +254,7 @@ function MarkSchemeCover({ paper }: { paper: Paper }) {
   return (
     <section className="px-12 py-16">
       <p className="text-[30px] font-black leading-tight tracking-tight">
-        Learnify Practice Paper
+        ExamPaper Practice Paper
       </p>
       <p className="mt-1.5 text-[22px] font-bold">Mark Scheme</p>
       <div className="mt-6 space-y-1 text-[16px]">
@@ -348,13 +348,13 @@ function CalcIcon({ crossed }: { crossed: boolean }) {
   )
 }
 
-function LearnifyMark() {
+function ExamPaperMark() {
   return (
     <div className="flex flex-col items-center">
       <div className="grid h-8 w-8 place-items-center rounded-md bg-neutral-900 text-white">
         <BracketsIcon className="h-4 w-4" />
       </div>
-      <span className="mt-1 text-sm font-bold tracking-tight">Learnify</span>
+      <span className="mt-1 text-sm font-bold tracking-tight">ExamPaper</span>
     </div>
   )
 }

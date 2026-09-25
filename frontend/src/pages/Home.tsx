@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-12">
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-        Learnify
+        ExamPaper
       </h1>
       <p className="mt-3 max-w-xl text-lg text-[var(--muted)]">
         Original past papers and worksheets, generated for your exam board.
